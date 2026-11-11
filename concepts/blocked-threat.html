@@ -1,0 +1,25 @@
+<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>malware.wicar.org blocked: Threat intelligence feeds</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css"><link rel="stylesheet" href="pages.css"></head><body><main class="page"><div class="scope"><svg class="mark" viewBox="0 0 18 18" aria-hidden="true"><circle cx="3" cy="9" r="2.2" fill="currentColor"/><path d="M6 9h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M14.5 5v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span><b>NX Block Reason</b> · profile abc123 · laptop</span></div>
+<div class="title-row"><div><h1>malware.wicar.org<span class="pill pill-negative">Malware</span></h1>
+<p class="finding">Three separate protections flag this domain as a malware site. Opening it may download harmful files.</p></div><div class="actions"><a class="btn btn-primary" href="#">Back to safety</a></div></div>
+<dl class="strip card"><div><dt>Page</dt><dd>https://malware.wicar.org/data/eicar.com</dd></div>
+<div><dt>Blocked domain</dt><dd>malware.wicar.org</dd></div>
+<div><dt>Chrome reported</dt><dd class="nowrap">Name not resolved</dd></div>
+<div><dt>Checked</dt><dd class="num nowrap">Today, 12:44:52</dd></div></dl>
+<section class="card why" aria-labelledby="why-h"><div class="card-h"><h2 id="why-h">Why it was blocked</h2>
+<span>3 rules matched</span></div>
+<ul class="reasons"><li class="threat"><h3>Threat intelligence feeds</h3><code class="rule-code">threat-intelligence-feeds</code>
+<p>Listed by the security feeds NextDNS follows as hosting malware, phishing or attack servers.</p><span class="setting">Security › Threat intelligence feeds</span></li><li class="threat"><h3>Google Safe Browsing</h3><code class="rule-code">googlesafebrowsing</code>
+<p>Google lists this domain as unsafe.</p><span class="setting">Security › Google Safe Browsing</span></li><li class="threat"><h3>AI-driven threat detection</h3><code class="rule-code">ai-threat-detection</code>
+<p>NextDNS’s model judged the domain malicious from how it looks and behaves.</p><span class="setting">Security › AI-driven threat detection</span></li></ul><div class="compare"><h3>The same name, asked twice</h3>
+<div class="lane blocked threat"><span class="who">NextDNS · abc123</span>
+<span class="what"><i class="stop"></i><span class="ans">Blocked: threat-intelligence-feeds, googlesafebrowsing, ai-threat-detection</span></span><span class="ms num">27 ms</span></div>
+<div class="lane open"><span class="who">Public DNS · 1.1.1.1</span>
+<span class="what"><i class="stop"></i><span class="ans num">199.34.228.69</span></span><span class="ms num">22 ms</span></div></div><details class="raw"><summary>Raw DNS answer</summary><pre><span>query    </span>malware.wicar.org  A, AAAA
+<span>resolver </span>dns.nextdns.io/abc123/nx-block-reason · DoH · zepto-waw-1
+<span>status   </span>NOERROR, 0 answers
+<span>EDE      </span>17 Filtered: "Blocked by NextDNS: threat-intelligence-feeds, googlesafebrowsing, ai-threat-detection"
+<span>public   </span>1.1.1.1 → 199.34.228.69
+<span>chrome   </span>net::ERR_NAME_NOT_RESOLVED (main frame)
+<span>checked  </span>2026-11-11 12:44:52</pre></details><div class="more"><a class="btn btn-text" href="#">Open NextDNS logs</a><a class="btn btn-text" href="#">Allow anyway…</a></div></section></main></body></html>

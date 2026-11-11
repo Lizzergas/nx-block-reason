@@ -1,0 +1,6 @@
+node_modules/
+test/e2e/out/
+.taste-skill/
+.DS_Store
+dist/
+store/src/

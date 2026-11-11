@@ -1,0 +1,1 @@
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"127.0.0.1.nip.io","type":1}],"Answer":[{"name":"127.0.0.1.nip.io","type":1,"TTL":3600,"data":"127.0.0.1"}]}

@@ -1,0 +1,22 @@
+{
+  "name": "nx-block-reason",
+  "version": "0.0.2",
+  "private": true,
+  "type": "module",
+  "description": "Chrome extension that explains why NextDNS blocked a site.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "e2e": "node test/e2e/run.mjs",
+    "store:screenshots": "STORE=1 node test/e2e/run.mjs",
+    "package": "npm test && node scripts/privacy.mjs --check && node scripts/package.mjs",
+    "concepts": "node concepts/render.mjs",
+    "store:assets": "node scripts/store-assets.mjs",
+    "icons": "node scripts/icon.mjs",
+    "privacy": "node scripts/privacy.mjs"
+  },
+  "license": "MIT",
+  "author": "Lizz Studio <home@lizz.dev>"
+}

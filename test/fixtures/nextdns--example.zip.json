@@ -1,0 +1,1 @@
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":true,"CD":false,"Question":[{"name":"example.zip.","type":1}],"Authority":[{"name":"zip.","type":6,"TTL":899,"data":". . 0 0 0 0 900"}],"Additional":[{"name":".","type":41,"TTL":0,"data":"\n;; OPT PSEUDOSECTION:\n; EDNS: version 0; flags:; udp: 1232"}]}

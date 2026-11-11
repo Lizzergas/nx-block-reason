@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NX Block Reason settings</title>
+<link rel="icon" href="icons/32.png">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="options.js"></script>
+</head>
+<body>
+<main class="settings">
+  <div class="scope" id="scope"></div>
+  <h1>Settings <span class="saved" id="saved" aria-live="polite"></span></h1>
+
+  <section class="section">
+    <div><h2><label for="profileId">Profile ID</label></h2><p class="desc">From my.nextdns.io/<b>abc123</b></p></div>
+    <div class="panel">
+      <div class="input"><input id="profileId" autocomplete="off" spellcheck="false" maxlength="6" placeholder="abc123" aria-describedby="profile-status"><span class="pill" id="profile-status" hidden></span></div>
+      <div class="result" id="test-lookup" hidden><span id="test-text"></span><span class="ms num" id="test-ms"></span></div>
+      <div class="result" id="browser-status" hidden><span id="browser-text"></span></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div><h2><label for="apiKey">API key</label> <span class="optional">(optional)</span></h2><p class="desc">Enables one-click Allow. <a href="https://my.nextdns.io/account" target="_blank" rel="noopener">Find your key</a></p></div>
+    <div class="panel">
+      <div class="input"><input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="Paste API key"><span class="pill" id="key-status" hidden></span></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div><h2>Behaviour</h2></div>
+    <div class="panel" id="switches"></div>
+  </section>
+
+  <footer class="foot"><a href="privacy.html" target="_blank">Privacy policy</a><a href="mailto:home@lizz.dev">home@lizz.dev</a><span id="version"></span></footer>
+</main>
+</body>
+</html>

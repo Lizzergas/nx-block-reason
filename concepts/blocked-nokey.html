@@ -1,0 +1,24 @@
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>lizz-blog.chopfarms.workers.dev blocked: Free hosting platform</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css"><link rel="stylesheet" href="pages.css"></head><body><main class="page"><div class="scope"><svg class="mark" viewBox="0 0 18 18" aria-hidden="true"><circle cx="3" cy="9" r="2.2" fill="currentColor"/><path d="M6 9h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M14.5 5v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span><b>NX Block Reason</b> · profile abc123 · laptop</span></div>
+<div class="title-row"><div><h1>lizz-blog.chopfarms.workers.dev</h1>
+<p class="finding">Every *.workers.dev address is blocked by your free-hosting setting. No threat list matches.</p></div><div class="actions"><a class="btn btn-secondary" href="#">Copy domain</a><a class="btn btn-primary" href="#">Open allowlist in NextDNS</a></div></div>
+<dl class="strip card"><div><dt>Page</dt><dd>https://lizz-blog.chopfarms.workers.dev/blog</dd></div>
+<div><dt>Blocked domain</dt><dd>lizz-blog.chopfarms.workers.dev</dd></div>
+<div><dt>Chrome reported</dt><dd class="nowrap">Name not resolved</dd></div>
+<div><dt>Checked</dt><dd class="num nowrap">Today, 12:47:30</dd></div></dl>
+<section class="card why" aria-labelledby="why-h"><div class="card-h"><h2 id="why-h">Why it was blocked</h2>
+<span>2 rules matched</span></div>
+<ul class="reasons"><li class="network"><h3>Free hosting platform</h3><code class="rule-code">free-hosting</code>
+<p>Anyone can publish on this platform for free. Attackers use it, and so do most developer previews.</p><span class="setting">Security › Block free hosting</span></li><li class="guess"><h3>Newly active domain</h3><code class="rule-code">nad</code>
+<p>NextDNS has rarely seen anyone look this domain up. Small and brand-new sites trigger it until they get regular visitors.</p><span class="setting">Security › Block newly registered domains</span></li></ul><div class="compare"><h3>The same name, asked twice</h3>
+<div class="lane blocked"><span class="who">NextDNS · abc123</span>
+<span class="what"><i class="stop"></i><span class="ans">Blocked: free-hosting, nad</span></span><span class="ms num">29 ms</span></div>
+<div class="lane open"><span class="who">Public DNS · 1.1.1.1</span>
+<span class="what"><i class="stop"></i><span class="ans num">104.21.80.207, 172.67.153.202</span></span><span class="ms num">16 ms</span></div></div><details class="raw"><summary>Raw DNS answer</summary><pre><span>query    </span>lizz-blog.chopfarms.workers.dev  A, AAAA
+<span>resolver </span>dns.nextdns.io/abc123/nx-block-reason · DoH · zepto-waw-1
+<span>status   </span>NOERROR, 0 answers
+<span>EDE      </span>17 Filtered: "Blocked by NextDNS: free-hosting, nad"
+<span>public   </span>1.1.1.1 → 104.21.80.207, 172.67.153.202
+<span>chrome   </span>net::ERR_NAME_NOT_RESOLVED (main frame)
+<span>checked  </span>2026-11-11 12:47:30</pre></details><div class="more"><span>Add a NextDNS API key in settings to allow sites from this page.</span><a class="btn btn-text" href="#">Settings</a></div></section></main></body></html>

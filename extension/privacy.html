@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NX Block Reason privacy policy</title>
+<link rel="icon" href="icons/32.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- Generated from PRIVACY.md by scripts/privacy.mjs. Do not edit by hand. -->
+<main class="doc">
+<h1>Privacy policy</h1>
+<p>NX Block Reason, last updated November 11, 2026.</p>
+<p>NX Block Reason is a Chrome extension that explains why NextDNS blocked a website. It has no server, no analytics and no accounts. The developer receives no data from it.</p>
+<h2>What the extension handles</h2>
+<ul><li><strong>Host names of blocked pages and requests.</strong> When a page, or a request inside it, fails with a DNS error, the extension looks up its host name (for example <code>ads.example.com</code>):<ul><li>It always asks your own NextDNS profile (<code>dns.nextdns.io</code>). These lookups appear in your NextDNS logs, labelled &quot;nx-block-reason&quot; unless you turn that off.</li><li>If &quot;Compare with public DNS&quot; is on, which is the default, it also asks Cloudflare's public DNS (<code>cloudflare-dns.com</code>, 1.1.1.1).</li><li>It never looks up local addresses such as localhost, <code>.local</code> names or IP addresses.</li></ul>
+</li><li><strong>Full page addresses.</strong> The address of a blocked page is kept in the browser so the explanation page can reload it. It is not sent anywhere.</li><li><strong>Your NextDNS profile ID and settings.</strong> These are stored with Chrome's sync storage, which Chrome syncs between your own browsers if you use Chrome sync.</li><li><strong>Your NextDNS API key, if you add one.</strong> It is stored only in this browser (Chrome's local storage). It is sent only to <code>api.nextdns.io</code>: when you choose Allow or Undo, or when the key is checked in settings.</li><li><strong>A connection check.</strong> The settings page asks <code>test.nextdns.io</code> whether this browser uses NextDNS.</li></ul>
+<p>The list of requests blocked on each tab is kept in memory for the browser session and deleted when the tab closes.</p>
+<h2>What it does not do</h2>
+<p>It does not:</p>
+<ul><li>sell or share data;</li><li>show ads or track you;</li><li>use data for anything except explaining NextDNS blocks;</li><li>read page content.</li></ul>
+<h2>Third parties</h2>
+<p>The NextDNS and Cloudflare requests above are covered by their own privacy policies:</p>
+<ul><li>NextDNS: <a href="https://nextdns.io/privacy" target="_blank" rel="noopener">https://nextdns.io/privacy</a></li><li>Cloudflare: <a href="https://www.cloudflare.com/application/privacypolicy/" target="_blank" rel="noopener">https://www.cloudflare.com/application/privacypolicy/</a></li></ul>
+<p>NX Block Reason is not affiliated with or endorsed by NextDNS Inc.</p>
+<h2>Contact</h2>
+<p><a href="mailto:home@lizz.dev">home@lizz.dev</a></p>
+
+</main>
+</body>
+</html>

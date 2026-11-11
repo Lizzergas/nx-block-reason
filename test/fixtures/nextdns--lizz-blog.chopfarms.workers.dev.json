@@ -1,0 +1,1 @@
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"lizz-blog.chopfarms.workers.dev.","type":1}],"Additional":[{"name":".","type":41,"TTL":0,"data":"\n;; OPT PSEUDOSECTION:\n; EDNS: version 0; flags:; udp: 4096\n; EDE: 17 (Filtered): (Blocked by NextDNS: free-hosting, nad)"}]}

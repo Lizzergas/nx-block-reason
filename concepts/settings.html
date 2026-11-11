@@ -1,0 +1,14 @@
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>NX Block Reason settings</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css"><link rel="stylesheet" href="pages.css"></head><body><main class="settings"><div class="scope"><svg class="mark" viewBox="0 0 18 18" aria-hidden="true"><circle cx="3" cy="9" r="2.2" fill="currentColor"/><path d="M6 9h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M14.5 5v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span><b>NX Block Reason</b> · profile abc123 · laptop</span></div><h1>Settings</h1><p>Explains NextDNS blocks in this browser. Only the profile ID is required.</p>
+<section class="section"><div><h2>NextDNS profile</h2><p class="desc">The 6-character ID from your dashboard address, my.nextdns.io/abc123. Used to ask NextDNS why a domain was blocked.</p></div>
+<div class="panel"><div class="field"><label for="pid">Profile ID</label><div class="input"><span id="pid">abc123</span><span class="pill pill-positive">Connected</span></div></div>
+<div class="result"><span class="k">Test lookup just now</span><span>doubleclick.net · NextDNS Ads &amp; Trackers Blocklist</span><span class="ms num">24 ms</span></div>
+<div class="result"><span class="k">This browser</span><span>Uses NextDNS over DoH via Tailscale, device laptop</span></div></div></section>
+<section class="section"><div><h2>API key <span style="color:var(--muted);font-weight:400">· optional</span></h2><p class="desc">Lets the blocked page add a domain to your allowlist or denylist. Stored only in this browser and sent only to api.nextdns.io.</p></div>
+<div class="panel"><div class="field"><label for="key">API key</label><div class="input"><span class="ph" id="key">Paste the key from my.nextdns.io/account</span></div>
+<p class="note">Without a key, the blocked page links to your allowlist instead.</p></div></div></section>
+<section class="section"><div><h2>Behaviour</h2><p class="desc">What the extension changes in Chrome.</p></div>
+<div class="panel"><div class="switch"><b>Replace Chrome's error page</b><span>Only when NextDNS confirms the block. Sites that are simply down keep Chrome's page.</span><i class="toggle"></i></div>
+<div class="switch"><b>Count blocked requests on the toolbar icon</b><span>Ads and trackers blocked inside the page you are on.</span><i class="toggle"></i></div>
+<div class="switch"><b>Label lookups as “nx-block-reason” in your logs</b><span>Keeps these checks apart from your normal browsing.</span><i class="toggle"></i></div></div></section></main></body></html>

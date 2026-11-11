@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NX Block Reason concepts</title>
+<style>
+  .shot { margin: 0 0 32px; }
+  .shot h2 { font: 600 15px/1.3 var(--font-sans); margin: 0 0 4px; color: var(--foreground); }
+  .shot p { font: 13px/1.5 var(--font-sans); margin: 0 0 10px; color: var(--muted-foreground); }
+  .shot img { display: block; width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 600px) { .pair { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<section class="shot">
+  <h2>Blocked by a guess</h2>
+  <p>amovegames.com, blocked as a newly active domain. The domain is the title, with the reason in one sentence under it. The one blue mark is NextDNS's answer, shown next to public DNS. With an API key, Allow is the main button.</p>
+  <img src="shots/blocked-desktop.jpg" alt="Blocked page for amovegames.com in light mode">
+</section>
+<section class="shot">
+  <h2>Confirmed threat, dark mode</h2>
+  <p>malware.wicar.org, matched by three protections. Red appears only on the Malware tag and on NextDNS's answer. Back to safety is the only button; Allow anyway is a text link at the bottom.</p>
+  <img src="shots/blocked-threat-desktop.jpg" alt="Blocked page for a malware domain in dark mode">
+</section>
+<div class="pair">
+  <section class="shot">
+    <h2>No API key, on a phone</h2>
+    <p>Your own workers.dev preview, blocked as free hosting. Without a key the buttons copy the domain and open your allowlist.</p>
+    <img src="shots/blocked-nokey-phone.jpg" alt="Blocked page on a phone without an API key">
+  </section>
+  <section class="shot">
+    <h2>Toolbar popup</h2>
+    <p>Requests blocked inside the current page, one row per domain, with how many requests and which list.</p>
+    <img src="shots/popup.png" alt="Toolbar popup listing blocked domains on a page">
+  </section>
+</div>
+<section class="shot">
+  <h2>After Allow</h2>
+  <p>The page waits until NextDNS answers with an address, then reloads by itself. Undo is one click.</p>
+  <img src="shots/allowed-desktop.jpg" alt="Allowed state while the page reloads">
+</section>
+<section class="shot">
+  <h2>Settings</h2>
+  <p>The profile ID is required; the API key is optional. A test lookup proves the connection.</p>
+  <img src="shots/settings-desktop.jpg" alt="Settings page">
+</section>
+</body>
+</html>
