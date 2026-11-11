@@ -33,14 +33,16 @@ const NRD_PERIODS = { day: 'a day', week: 'a week', month: '30 days' };
 const words = id => id.split(/[-_]/).filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
 
 export function describe(code) {
-  if (CODES[code]) return { code, short: CODES[code].name, ...CODES[code] };
+  // Object.hasOwn: codes come from DNS answers, so names like "__proto__" must not reach Object.prototype.
+  if (Object.hasOwn(CODES, code)) return { code, short: CODES[code].name, ...CODES[code] };
   if (code.startsWith('blocklist:')) {
     const id = code.slice('blocklist:'.length);
-    const [name, short] = BLOCKLISTS[id] ?? [words(id), words(id)];
+    const [name, short] = Object.hasOwn(BLOCKLISTS, id) ? BLOCKLISTS[id] : [words(id), words(id)];
     return { code, name, short, kind: 'privacy', setting: 'Privacy: Blocklists', why: 'This blocklist lists the domain as advertising, tracking or telemetry.' };
   }
   if (code.startsWith('nrd')) {
-    const period = NRD_PERIODS[code.split('~')[1]] ?? '30 days';
+    const key = code.split('~')[1];
+    const period = Object.hasOwn(NRD_PERIODS, key ?? '') ? NRD_PERIODS[key] : '30 days';
     return { code, name: `Registered less than ${period} ago`, short: 'Newly registered domain', kind: 'guess',
       setting: 'Security: Block newly registered domains',
       why: 'New domains are a common tool for phishing, so NextDNS holds them back for their first month.' };

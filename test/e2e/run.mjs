@@ -1,7 +1,7 @@
 // End-to-end check in real Chrome with the unpacked extension, against live NextDNS.
 // Needs this machine's DNS to go through the NextDNS profile below. Usage: npm run e2e [-- --profile abc123]
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +23,8 @@ const userData = mkdtempSync(join(tmpdir(), 'nx-block-reason-e2e-'));
 // Branded Chrome ignores --load-extension; Extensions.loadUnpacked over a debugging pipe is the supported route.
 const chrome = spawn(chromePath, [
   '--headless=new', '--remote-debugging-pipe', '--enable-unsafe-extension-debugging', `--user-data-dir=${userData}`,
+  // example.org stands in for a domain this device still has a blocked answer for, while NextDNS answers normally.
+  '--host-resolver-rules=MAP example.org 0.0.0.0',
   '--no-first-run', '--no-default-browser-check', '--window-size=1440,900',
 ], { stdio: ['ignore', 'ignore', 'ignore', 'pipe', 'pipe'] });
 const toChrome = chrome.stdio[3];
@@ -59,8 +61,8 @@ async function waitFor(fn, what, timeout = 20000) {
   }
   throw new Error(`Timed out waiting for ${what}`);
 }
-async function evaluate(sessionId, expression) {
-  const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }, sessionId);
+async function evaluate(sessionId, expression, userGesture = false) {
+  const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture }, sessionId);
   if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? 'evaluate failed');
   return r.result.value;
 }
@@ -102,6 +104,7 @@ async function shot(sessionId, name) {
 }
 
 const results = [];
+let grantedCopy; // temporary copy of the extension with optional access granted
 async function step(name, fn) {
   try {
     await fn();
@@ -112,13 +115,16 @@ async function step(name, fn) {
 }
 
 try {
-  const { id: extId } = await send('Extensions.loadUnpacked', { path: extension });
-  const base = `chrome-extension://${extId}`;
-
-  // Set up the profile the way the settings page would.
-  const settings = await open(`${base}/options.html`);
-  await waitFor(() => evaluate(settings.sessionId, `location.href.startsWith(${JSON.stringify(base)}) && document.readyState === 'complete' && Boolean(globalThis.chrome?.storage)`).catch(() => false), 'settings page');
-  await evaluate(settings.sessionId, `chrome.storage.sync.set({ profileId: ${JSON.stringify(profileId)} })`);
+  // Loads the extension and sets up the profile the way the settings page would.
+  async function install(path) {
+    const { id } = await send('Extensions.loadUnpacked', { path });
+    const base = `chrome-extension://${id}`;
+    const settings = await open(`${base}/options.html`);
+    await waitFor(() => evaluate(settings.sessionId, `location.href.startsWith(${JSON.stringify(base)}) && document.readyState === 'complete' && Boolean(globalThis.chrome?.storage)`).catch(() => false), 'settings page');
+    await evaluate(settings.sessionId, `chrome.storage.sync.set({ profileId: ${JSON.stringify(profileId)} })`);
+    return { id, base, settings };
+  }
+  let { id: extId, base, settings } = await install(extension);
 
   async function blockedPage(domain) {
     const tab = await open(`https://${domain}/`);
@@ -160,6 +166,11 @@ try {
     await shot(tab.sessionId, 'blocked-nad-light.png');
     await send('Emulation.setEmulatedMedia', { features: [] }, tab.sessionId);
     await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 1, y: 1 }, tab.sessionId);
+    // Public DNS is off by default: nothing is sent to Cloudflare until the person asks for this domain.
+    assert.equal(await evaluate(tab.sessionId, `document.querySelector('.lane.open .lane-ask')?.textContent`), 'Ask public DNS');
+    await evaluate(tab.sessionId, `document.querySelector('.lane.open .lane-ask').click()`);
+    const answer = await waitFor(() => evaluate(tab.sessionId, `document.querySelector('.lane.open .ans')?.textContent.match(/^\\d+\\.\\d+\\.\\d+\\.\\d+/)?.[0]`), 'the public DNS answer', 10000);
+    assert.ok(answer);
     await evaluate(tab.sessionId, `document.querySelector('details.raw').open = true`);
     await storeShot(tab.sessionId, '1-blocked-guess.png');
   });
@@ -201,6 +212,82 @@ try {
     const tab = await open('http://localhost:9/');
     await sleep(2500);
     assert.ok(!(await targetUrl(tab.targetId)).startsWith(base), 'localhost must keep Chrome’s own error page');
+  });
+
+  await step('a cached blocked answer without evidence keeps Chrome’s page and the popup explains it', async () => {
+    const tab = await open('https://example.org/');
+    const tabId = await waitFor(async () => {
+      const all = await evaluate(settings.sessionId, 'chrome.storage.session.get(null)');
+      const entry = Object.entries(all).find(([k, v]) => k.startsWith('failed:') && v.host === 'example.org');
+      return entry && Number(entry[0].slice(7));
+    }, 'the failure to be recorded');
+    assert.ok(!(await targetUrl(tab.targetId)).startsWith(base), 'no evidence of a block: Chrome’s page stays');
+    assert.equal(await evaluate(settings.sessionId, `chrome.action.getBadgeText({ tabId: ${tabId} })`), '!');
+    const popup = await open(`${base}/popup.html?tab=${tabId}`);
+    const text = await waitFor(() => evaluate(popup.sessionId, `document.querySelector('.pop-h p')?.textContent`), 'the popup');
+    assert.equal(text, 'Not blocked by NextDNS now.');
+    await evaluate(popup.sessionId, `document.querySelector('.pop-cta .btn').click()`);
+    await waitFor(async () => (await targetUrl(tab.targetId))?.startsWith(`${base}/blocked.html`), 'the explanation page');
+    const finding = await waitFor(() => evaluate(tab.sessionId, `document.querySelector('.finding')?.textContent`), 'the finding');
+    assert.equal(finding, 'NextDNS isn’t blocking it now. This device may still have an old blocked answer.');
+  });
+
+  await step('a cached blocked answer after a recent block shows what happened and how to clear it', async () => {
+    await evaluate(settings.sessionId, `chrome.storage.session.set({ 'was:example.org': { at: Date.now() - 5 * 60_000, codes: ['blocklist:hagezi-pro'] } })`);
+    const tab = await open('https://example.org/');
+    await waitFor(async () => (await targetUrl(tab.targetId))?.startsWith(`${base}/blocked.html`), 'the explanation page');
+    const text = await waitFor(() => evaluate(tab.sessionId, `document.querySelector('.finding') && ({
+      finding: document.querySelector('.finding').textContent,
+      lanes: [...document.querySelectorAll('.compare.stale .lane')].map(l => l.querySelector('.who').textContent + ': ' + l.querySelector('.ans').textContent),
+      steps: document.querySelectorAll('.fix li').length })`), 'the stale page');
+    // example.org is mapped to 0.0.0.0, so Chrome reports a refused connection: worded as likely, not certain.
+    assert.equal(text.finding, 'NextDNS allows it now, but this device probably still has the old blocked answer.');
+    assert.match(text.lanes[0], /^Earlier: Blocked 5 min ago by /);
+    assert.match(text.lanes[1], /^NextDNS now: \d+\.\d+\.\d+\.\d+/);
+    assert.match(text.lanes[2], /^Chrome got: /);
+    assert.equal(text.steps, 3);
+    await shot(tab.sessionId, 'stale.png');
+    // Reload must explain again, not be treated as Back.
+    await evaluate(tab.sessionId, `document.querySelector('.actions .btn-primary').click()`);
+    await sleep(2500);
+    await waitFor(async () => (await targetUrl(tab.targetId))?.startsWith(`${base}/blocked.html`), 'the explanation after Reload');
+    await waitFor(() => evaluate(tab.sessionId, `document.querySelector('.finding')?.textContent.startsWith('NextDNS allows it now')`), 'the stale page after Reload');
+  });
+
+  await step('only NextDNS hosts are granted until counting is turned on', async () => {
+    const granted = await evaluate(settings.sessionId, 'chrome.permissions.getAll()');
+    assert.deepEqual(granted.permissions.sort(), ['alarms', 'storage', 'webNavigation']);
+    assert.deepEqual(granted.origins.sort(), ['https://*.test.nextdns.io/*', 'https://api.nextdns.io/*', 'https://dns.nextdns.io/*']);
+    await send('Page.reload', {}, settings.sessionId);
+    await waitFor(() => evaluate(settings.sessionId, `Boolean(document.getElementById('countRequests'))`), 'the count switch');
+    assert.equal(await evaluate(settings.sessionId, `document.getElementById('countRequests').checked`), false);
+    const tab = await open('about:blank');
+    const tabId = await evaluate(settings.sessionId, `chrome.tabs.query({}).then(tabs => tabs.find(t => !t.url?.startsWith('chrome-extension://') && t.id)?.id)`);
+    const popup = await open(`${base}/popup.html?tab=${tabId}`);
+    const text = await waitFor(() => evaluate(popup.sessionId, `document.querySelector('.pop-h p')?.textContent`), 'the popup');
+    assert.equal(text, 'Counting blocked requests is off.');
+    await send('Emulation.setDeviceMetricsOverride', { width: 380, height: 260, deviceScaleFactor: 2, mobile: false }, popup.sessionId);
+    await shot(popup.sessionId, 'popup-off.png');
+    await send('Target.closeTarget', { targetId: popup.targetId });
+    await send('Target.closeTarget', { targetId: tab.targetId });
+  });
+
+  // Headless Chrome cannot accept the confirmation Chrome shows for optional access, so the counting checks run
+  // on a copy of the extension that holds that access from the start, as after the person accepts it.
+  grantedCopy = mkdtempSync(join(tmpdir(), 'nx-block-reason-granted-'));
+  cpSync(extension, grantedCopy, { recursive: true });
+  const manifest = JSON.parse(readFileSync(join(grantedCopy, 'manifest.json'), 'utf8'));
+  manifest.permissions.push(...manifest.optional_permissions);
+  manifest.host_permissions.push(...manifest.optional_host_permissions);
+  delete manifest.optional_permissions;
+  delete manifest.optional_host_permissions;
+  manifest.version = '0.0.2'; // the shape 0.0.2 had: counting always on; used below to test the upgrade
+  writeFileSync(join(grantedCopy, 'manifest.json'), JSON.stringify(manifest));
+  await send('Extensions.uninstall', { id: extId });
+  ({ id: extId, base, settings } = await install(grantedCopy));
+
+  await step('with the access granted, the count switch is on', async () => {
+    await waitFor(() => evaluate(settings.sessionId, `document.getElementById('countRequests')?.checked`), 'the count switch to show on', 5000);
   });
 
   await step('requests blocked inside a page are counted per tab', async () => {
@@ -252,6 +339,20 @@ try {
     await shot(settings.sessionId, 'settings.png');
     await storeShot(settings.sessionId, '4-settings.png');
   });
+  await step('updating from 0.0.2 gives back the access to all sites and drops the old badge switch', async () => {
+    await evaluate(settings.sessionId, `chrome.storage.sync.set({ badge: false })`);
+    cpSync(join(extension, 'manifest.json'), join(grantedCopy, 'manifest.json'));
+    // Loading the same folder again updates the unpacked extension in place, as pressing reload in chrome://extensions does.
+    const { id: updatedId } = await send('Extensions.loadUnpacked', { path: grantedCopy });
+    assert.equal(updatedId, extId, 'same extension, updated');
+    await sleep(1500);
+    const page = await open(`${base}/options.html`);
+    const state = await waitFor(() => evaluate(page.sessionId, `globalThis.chrome?.permissions && chrome.permissions.getAll().then(async p => ({ p, sync: await chrome.storage.sync.get(null) }))`).catch(() => null), 'the updated extension', 10000);
+    assert.ok(!state.p.permissions.includes('webRequest'), JSON.stringify(state.p));
+    assert.ok(!state.p.origins.includes('<all_urls>'), JSON.stringify(state.p));
+    assert.equal(state.sync.badge, undefined);
+    assert.equal(state.sync.profileId, profileId);
+  });
 } catch (error) {
   results.push(['FAIL', `setup: ${error.message}`]);
 } finally {
@@ -260,6 +361,7 @@ try {
   chrome.kill();
   await sleep(300);
   rmSync(userData, { recursive: true, force: true });
+  if (grantedCopy) rmSync(grantedCopy, { recursive: true, force: true });
   const failed = results.filter(([s]) => s === 'FAIL').length;
   console.log(failed ? `${failed} failed` : `all ${results.length} passed`, `(screenshots in ${out})`);
   process.exitCode = failed ? 1 : 0;

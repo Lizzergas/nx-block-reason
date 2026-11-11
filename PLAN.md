@@ -55,16 +55,16 @@ Built with tasteskill (`design-taste-frontend`, app-screen rules). Dealt style: 
 
 - Manifest V3, plain JavaScript, HTML and CSS with no build step or dependencies. Loaded unpacked from this folder, so it never auto-updates.
 - Files: `manifest.json`, `background.js` (detection, DoH, cache, API), `reasons.js` (catalog), `blocked.html/js`, `popup.html/js`, `options.html/js`, `style.css`.
-- Permissions: `webNavigation`, `webRequest`, `storage`, `tabs`; hosts `<all_urls>` (to observe request errors), `dns.nextdns.io`, `api.nextdns.io`, plus one public DoH resolver for comparison.
+- Permissions (0.0.3): `webNavigation`, `storage`, `alarms`; hosts `dns.nextdns.io`, `api.nextdns.io`, `*.test.nextdns.io`. Optional, asked for when the person turns on request counting: `webRequest` and `<all_urls>`. Cloudflare DNS needs no host permission (it allows cross-origin reads).
 - Storage: profile ID and options in `chrome.storage.sync`; API key in `chrome.storage.local` (this browser only).
 - Tests: `node --test` for EDE parsing, reason mapping and classification, against recorded resolver answers.
 
 ## Status (2026-11-11)
 
-Version 0.0.2 is built in `extension/`; see README.md for install and development.
+Version 0.0.3 is built in `extension/`; see README.md for install and development.
 
-- `npm test`: 13 unit tests pass against recorded answers.
-- `npm run e2e`: 7 live checks pass in Chrome 157.
-- Decisions: Cloudflare is the comparison resolver. "Allow for 10 minutes" is included and uses `chrome.alarms` to remove the entry. After allowing, the page waits for NextDNS to answer, then reloads.
-- Not yet verified live: the API calls (allow, undo, timed allow), because no API key was available. They follow the NextDNS API docs.
+- `npm test`: 20 unit tests pass against recorded answers.
+- `npm run e2e`: 13 live checks pass in Chrome 157.
+- Decisions: Cloudflare is the comparison resolver, asked only on request or with the switch on. "Allow for 10 minutes" stores its deadline in `chrome.storage.local` as well as an alarm (`lib/timed.js`), so updates and restarts cannot turn it into a permanent allow. After allowing, the page waits for NextDNS to answer, then reloads.
+- Not yet verified live: the API calls (allow, undo, timed allow, the logs search), because no API key was available. They follow the NextDNS API docs. Granting the optional access from the switch is also untested by e2e, because headless Chrome cannot accept the prompt.
 - Setting names for `free-hosting` and `tunneling` are best guesses and need checking against the NextDNS dashboard.

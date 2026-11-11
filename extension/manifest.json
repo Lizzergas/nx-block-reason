@@ -1,21 +1,47 @@
 {
   "manifest_version": 3,
   "name": "NX Block Reason",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Shows why NextDNS blocked a site, on Chrome's error page and for each tab. Unofficial; not affiliated with NextDNS Inc.",
   "minimum_chrome_version": "120",
-  "permissions": ["webNavigation", "webRequest", "storage", "alarms"],
+  "permissions": [
+    "webNavigation",
+    "storage",
+    "alarms"
+  ],
   "host_permissions": [
+    "https://dns.nextdns.io/*",
+    "https://api.nextdns.io/*",
+    "https://*.test.nextdns.io/*"
+  ],
+  "optional_permissions": [
+    "webRequest"
+  ],
+  "optional_host_permissions": [
     "<all_urls>"
   ],
-  "background": { "service_worker": "background.js", "type": "module" },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "action": {
     "default_title": "Blocked on this page",
     "default_popup": "popup.html",
-    "default_icon": { "16": "icons/16.png", "32": "icons/32.png" }
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png"
+    }
   },
-  "options_ui": { "page": "options.html", "open_in_tab": true },
-  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; connect-src https://dns.nextdns.io https://api.nextdns.io https://*.test.nextdns.io https://cloudflare-dns.com; img-src 'self'; font-src 'self'; style-src 'self'"
   }

@@ -21,13 +21,13 @@ When NextDNS blocks a site, Chrome only says "This site can't be reached". NX Bl
 - Hover the ? next to any rule for what it means and where to change it in NextDNS.
 - NextDNS's answer next to public DNS's answer, so you can see whether the site exists outside your filter.
 - The raw DNS answer, for when you want the details.
-- The toolbar icon counts the ads, trackers and telemetry blocked on the page you are on, and the popup lists them with the list that matched.
+- Optional: the toolbar icon counts the ads, trackers and telemetry blocked on the page you are on, and the popup lists them with the list that matched. This needs access to all sites, so it is off until you turn it on.
 
 It only needs your NextDNS profile ID. Add an API key if you want to allow a site in one click, for good or for 10 minutes. Without a key, the page links to your allowlist.
 
 Pages that are simply down or don't exist keep Chrome's normal error. Local addresses (localhost, .local, IP addresses) are never looked up.
 
-Privacy: no analytics, no accounts, no developer server. Blocked domain names go to your own NextDNS profile and, unless you turn it off, to Cloudflare's public DNS for the comparison. The API key stays in this browser and is sent only to NextDNS.
+Privacy: no analytics, no accounts, no developer server. Without the optional counting, the extension cannot read or change any website. Blocked domain names go only to your own NextDNS profile, and to Cloudflare's public DNS only when you ask for the comparison. The API key stays in this browser and is sent only to NextDNS.
 
 NX Block Reason is an independent project and is not affiliated with or endorsed by NextDNS Inc.
 
@@ -47,17 +47,18 @@ Explains why NextDNS blocked a website or a request, by showing the reason NextD
 
 | Permission | Why |
 | --- | --- |
-| `webNavigation` | To notice when a page fails to load because of a DNS block, so the error page can be replaced with the reason. |
-| `webRequest` | To notice requests inside a page (scripts, images) that failed because of a DNS block, and count them for the toolbar popup. Requests are observed only; nothing is blocked or changed. |
-| `storage` | To keep the profile ID, settings and the optional API key, and the per-tab list of blocked requests. |
-| `alarms` | To remove a domain from the allowlist again after "Allow for 10 minutes". |
-| Host permission `<all_urls>` | Blocked requests can come from any site. The extension only reads the host name of requests that failed with a DNS error. |
+| `webNavigation` | To notice when a page fails to load because of a DNS block, so Chrome's error page can be replaced with the reason NextDNS blocked it. |
+| `storage` | To keep the user's NextDNS profile ID, settings and optional API key, and the per-tab list of blocked requests shown in the popup. |
+| `alarms` | To remove a domain from the NextDNS allowlist again after the user chooses "Allow for 10 minutes". |
+| Host permissions | `dns.nextdns.io`: to ask the user's own NextDNS profile why a domain was blocked (this DNS endpoint does not allow cross-origin reads). `api.nextdns.io`, only when the user has saved an API key: to add or remove allowlist entries when they click Allow or Undo, and to search the profile's logs for one domain when a page fails although NextDNS no longer blocks it (to explain an old blocked answer still cached on the device). `*.test.nextdns.io`: to show in Settings whether this browser's DNS goes through NextDNS. No other sites are accessed. |
+
+Optional, requested only when the user turns on "Count blocked requests on pages" (not shown as fields in the dashboard, but reviewers see them in the manifest): `webRequest` and access to all sites, to notice requests inside a page that failed because of a DNS block. Requests are only observed; nothing is blocked or changed. Turning the switch off removes the access.
 
 **Remote code:** No. All code is in the package. It only fetches data: DNS answers from dns.nextdns.io and cloudflare-dns.com, the connection check from test.nextdns.io, and API responses from api.nextdns.io.
 
 **Data usage** (check these boxes):
 
-- **Web history.** The host names of pages and requests that failed with a DNS error are sent to the user's own NextDNS profile and, if "Compare with public DNS" is on, to Cloudflare DNS (1.1.1.1), to find out why they were blocked.
+- **Web history.** The host names of pages (and, if the user turns on counting, requests) that failed with a DNS error are sent to the user's own NextDNS profile, and to Cloudflare DNS (1.1.1.1) only when the user asks for the comparison, to find out why they were blocked.
 - **Authentication information.** The optional NextDNS API key is stored in the browser and sent only to api.nextdns.io.
 
 Then certify all three statements:
@@ -66,7 +67,7 @@ Then certify all three statements:
 - Not used or transferred for purposes unrelated to the item's single purpose.
 - Not used or transferred to determine creditworthiness or for lending purposes.
 
-**Privacy policy URL:** the GitHub page of `PRIVACY.md` once the repository is public, e.g. `https://github.com/Lizzergas/<repo>/blob/main/PRIVACY.md`. The same policy ships inside the extension (`privacy.html`, linked from Settings), so nothing needs hosting. The store only accepts a public web address in this field.
+**Privacy policy URL:** `https://github.com/Lizzergas/nx-block-reason/blob/main/PRIVACY.md`. The same policy ships inside the extension (`privacy.html`, linked from Settings), so nothing needs hosting. The store only accepts a public web address in this field.
 
 **Support email / contact:** home@lizz.dev
 

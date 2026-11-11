@@ -41,3 +41,12 @@ test('writes a short finding per kind', () => {
     assert.doesNotMatch(finding(codes.map(describe)), /·/);
   }
 });
+
+test('codes named like object properties are treated as unknown, not as built-ins', () => {
+  for (const code of ['__proto__', 'constructor', 'toString', 'blocklist:__proto__', 'blocklist:constructor', 'nrd~__proto__']) {
+    const d = describe(code);
+    assert.equal(typeof d.name, 'string', code);
+    assert.doesNotMatch(d.name, /object|function/i, code);
+  }
+  assert.equal(describe('nrd~__proto__').name, 'Registered less than 30 days ago');
+});

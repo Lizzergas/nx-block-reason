@@ -117,6 +117,8 @@ code { font-family: var(--mono); }
 .lane.blocked .stop { background: var(--kind-ink, var(--hue)); }
 .lane.blocked .ans { color: var(--kind-ink, var(--hue)); font-weight: 500; }
 .lane .ms { text-align: right; color: var(--faint); font-size: 12px; }
+.lane .lane-ask { height: auto; padding: 0; font-size: 14px; }
+h2 .tipwrap { margin-left: 6px; }
 
 details.raw { margin: 10px 20px 16px; }
 details.raw summary { cursor: pointer; color: var(--muted); font-size: 13px; list-style: none; display: inline-flex; gap: 6px; align-items: center; }
@@ -130,6 +132,15 @@ details.raw pre span { color: var(--faint); }
 .more { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; padding: 12px 20px 16px; border-top: 1px solid var(--rule); color: var(--muted); }
 .confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 0 20px 16px; color: var(--muted); }
 .confirm p { flex: 1 1 320px; }
+
+/* Not blocked anymore: what happened, and how to clear the cached answer. */
+.compare.stale { border-top: 0; padding-top: 8px; }
+.fix { margin: 0; padding: 8px 20px 12px 40px; }
+.fix li { padding: 8px 0; }
+.fix .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fix li::marker { color: var(--muted); }
+.fix code { font-size: 12.5px; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.btn-small { height: 28px; padding: 0 10px; font-size: 13px; flex: none; }
 
 .steps { list-style: none; margin: 0; padding: 12px 20px 16px; }
 .steps li { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: center; min-height: 36px; }
@@ -164,6 +175,7 @@ details.raw pre span { color: var(--faint); }
 .pop-list .btn { grid-row: 1 / span 2; grid-column: 3; height: 30px; padding: 0 10px; font-size: 13px; }
 .pop-hint { padding: 10px 16px 0; color: var(--muted); font-size: 13px; }
 .pop-cta { padding: 0 16px 16px; }
+.pop-cta-gap { padding-top: 12px; padding-bottom: 2px; }
 .pop-f { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px 12px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); margin-top: 10px; }
 .pop-f .link { font-size: 13px; color: var(--muted); }
 

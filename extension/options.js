@@ -1,7 +1,7 @@
 import { check } from './lib/dns.js';
 import { describe } from './lib/reasons.js';
 import { listProfiles } from './lib/api.js';
-import { getSettings, saveSettings, isProfileId } from './lib/settings.js';
+import { getSettings, saveSettings, isProfileId, canCount, COUNT_ACCESS } from './lib/settings.js';
 import { mark, h, tip } from './lib/dom.js';
 
 const $ = id => document.getElementById(id);
@@ -9,12 +9,14 @@ const TEST_DOMAIN = 'doubleclick.net'; // on nearly every ad blocklist, so it sh
 const PROTOCOLS = { DOH: 'DoH', DOT: 'DoT', DOQ: 'DoQ', UDP: 'plain DNS' };
 const SWITCHES = [
   ['replacePage', 'Replace Chrome’s error page', 'Only when NextDNS confirms the block. Sites that are simply down keep Chrome’s page.'],
-  ['badge', 'Show blocked count on the icon', 'Counts ads and trackers blocked on the page you are on.'],
   ['labelLookups', 'Label checks in NextDNS logs', 'Checks appear as the device “nx-block-reason”, apart from your normal browsing.'],
-  ['comparePublic', 'Compare with public DNS', 'Also asks Cloudflare’s 1.1.1.1 about each blocked domain, to show whether the site exists outside NextDNS. Turn off to send blocked domains only to NextDNS.'],
+  ['comparePublic', 'Compare with public DNS', 'Also asks Cloudflare’s 1.1.1.1 about each blocked domain, to show whether the site exists outside NextDNS. Off by default, so blocked domains go only to NextDNS.'],
 ];
+const COUNT_HELP = 'Counts ads and trackers blocked on the page you are on, on the icon and in its popup. Chrome asks for access to all sites, because a blocked request can come from any of them; only the host names of failed requests are read. Turning this off removes the access.';
+const KEY_HELP = 'An API key controls your whole NextDNS account: every profile, its settings and logs. It is stored only in this browser and sent only to api.nextdns.io. Leave it empty if you do not need one-click Allow.';
 
 $('scope').append(mark(), h('b', {}, 'NX Block Reason'));
+$('key-tip').append(tip(KEY_HELP, 'What can an API key do?'));
 $('version').textContent = `Version ${chrome.runtime.getManifest().version}, MIT licence`;
 
 let savedTimer;
@@ -107,12 +109,25 @@ async function main() {
   const settings = await getSettings();
   $('profileId').value = settings.profileId;
   $('apiKey').value = settings.apiKey;
+  const row = (id, title, help, input) => h('div', { class: 'switch' }, h('span', {}, h('label', { for: id }, title), tip(help)), input);
   for (const [id, title, help] of SWITCHES) {
     const input = h('input', { type: 'checkbox', id, class: 'toggle' });
     input.checked = settings[id];
     input.addEventListener('change', () => save({ [id]: input.checked }));
-    $('switches').append(h('div', { class: 'switch' }, h('span', {}, h('label', { for: id }, title), tip(help)), input));
+    $('switches').append(row(id, title, help, input));
   }
+  // Counting is the optional access itself, not a stored setting: on means Chrome granted it.
+  const count = h('input', { type: 'checkbox', id: 'countRequests', class: 'toggle' });
+  const syncCount = async () => { count.checked = await canCount(); };
+  count.addEventListener('change', () => {
+    // permissions.request must run straight from the click, before any await.
+    const change = count.checked ? chrome.permissions.request(COUNT_ACCESS) : chrome.permissions.remove(COUNT_ACCESS);
+    change.catch(() => {}).then(syncCount);
+  });
+  chrome.permissions.onAdded.addListener(syncCount);
+  chrome.permissions.onRemoved.addListener(syncCount);
+  await syncCount();
+  $('switches').children[0].after(row('countRequests', 'Count blocked requests on pages', COUNT_HELP, count));
   let timer;
   $('profileId').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(testProfile, 400); });
   $('apiKey').addEventListener('change', testKey);

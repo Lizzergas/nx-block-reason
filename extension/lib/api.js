@@ -48,6 +48,15 @@ export function removeFromList(key, profileId, list, domain) {
   return call(key, `/profiles/${encodeURIComponent(profileId)}/${list}/${encodeURIComponent(domain)}`, { method: 'DELETE' });
 }
 
+// The most recent time NextDNS blocked exactly this domain, from the profile's logs, or null.
+// Used to tell "blocked earlier, and this device still has that answer cached" apart from a site that is down.
+export async function lastBlocked(key, profileId, domain, { withinMs = 24 * 3600_000, ...options } = {}) {
+  const query = new URLSearchParams({ search: domain, status: 'blocked', limit: '20', from: new Date(Date.now() - withinMs).toISOString() });
+  const { data = [] } = await call(key, `/profiles/${encodeURIComponent(profileId)}/logs?${query}`, options);
+  const hit = data.find(entry => entry.domain === domain);
+  return hit ? { at: Date.parse(hit.timestamp), reasons: (hit.reasons ?? []).map(r => ({ id: String(r.id ?? ''), name: String(r.name ?? r.id ?? '') })), device: hit.device?.name ?? null } : null;
+}
+
 export const dashboard = {
   allowlist: id => `https://my.nextdns.io/${encodeURIComponent(id)}/allowlist`,
   logs: id => `https://my.nextdns.io/${encodeURIComponent(id)}/logs`,
