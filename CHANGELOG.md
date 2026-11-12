@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.5 (2026-11-12)
+
+- **"Not resolved" right after allowing is explained at once.** When Chrome gets no address but NextDNS now has one, the page explains it even if the extension never saw the earlier block (for example a block from before Chrome started). Previously Chrome's error page stayed and only the icon showed "!". A failed connection without evidence of a block still keeps Chrome's page, because the site may simply be down.
+- **The page checks this browser's connection.** A "This browser" line says whether DNS goes through NextDNS (and how). If it doesn't, the page says the failure came from another DNS server and to check Tailscale, the NextDNS app or the router.
+- **More ways to clear the old answer:** wait (blocked answers usually expire within 5 minutes), and a note that phones and other computers keep their own copy (toggle airplane mode on a phone). The macOS command also flushes the directory service cache.
+
+## 0.0.4 (2026-11-12)
+
+- **Old blocked answers over HTTP/3.** When Chrome remembers that a site speaks HTTP/3 and the device still has its old `0.0.0.0` answer, the page fails with `ERR_QUIC_PROTOCOL_ERROR` instead of a refused connection. The extension now explains that case too, and tells you to flush Chrome's socket pools as well as its host cache. Reset and failed connections (`ERR_CONNECTION_RESET`, `ERR_CONNECTION_FAILED`) are checked the same way.
+
 ## 0.0.3 (2026-11-11)
 
 Fewer permissions. Without the optional counting, the extension cannot read or change any website.

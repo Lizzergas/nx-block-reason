@@ -14,7 +14,7 @@ NX Block Reason is a Chrome extension that explains why NextDNS blocked a websit
 - **Full page addresses.** The address of a blocked page, or of a page that failed although NextDNS no longer blocks it, is kept in the browser for the session so the explanation page can reload it. It is not sent anywhere.
 - **Your NextDNS profile ID and settings.** These are stored with Chrome's sync storage, which Chrome syncs between your own browsers if you use Chrome sync.
 - **Your NextDNS API key, if you add one.** It is stored only in this browser (Chrome's local storage). When you allow a domain for 10 minutes, that domain and the time to remove it are stored there too, until NextDNS confirms the removal. It is sent only to `api.nextdns.io`: when you choose Allow or Undo, when the key is checked in settings, and when a page fails although NextDNS no longer blocks it. In that last case the extension searches your NextDNS logs for that one domain, to see whether it was blocked in the last 24 hours.
-- **A connection check.** The settings page asks `test.nextdns.io` whether this browser uses NextDNS.
+- **A connection check.** The settings page, and the page explaining an old blocked answer, ask `test.nextdns.io` whether this browser uses NextDNS.
 
 The list of requests blocked on each tab is kept in memory for the browser session and deleted when the tab closes. The domains NextDNS blocked during the session are also kept in memory until the browser closes, so the extension can recognise an old blocked answer that is still cached on your device.
 

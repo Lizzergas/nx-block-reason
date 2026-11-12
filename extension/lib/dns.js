@@ -87,3 +87,26 @@ export async function check(host, { profileId, labelLookups = true, comparePubli
     error: nd.status === 'rejected' ? String(nd.reason?.message ?? nd.reason) : null,
   };
 }
+
+// Chrome errors that mean it got no usable address at all. When NextDNS has an address for the same name, this
+// device did not get NextDNS's current answer: usually it still has an old blocked answer cached.
+export const NO_ADDRESS_ERRORS = new Set(['net::ERR_NAME_NOT_RESOLVED', 'net::ERR_NAME_RESOLUTION_FAILED', 'net::ERR_ADDRESS_INVALID']);
+
+// NextDNS gives blocked answers a 5-minute lifetime (TTL 300), so devices usually forget one within 5 minutes.
+export const BLOCKED_ANSWER_MINUTES = 5;
+
+const PROTOCOLS = { DOH: 'DoH', DOT: 'DoT', DOQ: 'DoQ', UDP: 'plain DNS' };
+
+// Asks test.nextdns.io whether this browser's DNS goes through NextDNS. It serves browsers a page that queries a
+// random subdomain, so ask a random subdomain for the JSON directly. Returns null when the check itself fails.
+export async function browserStatus({ fetchImpl = fetch } = {}) {
+  try {
+    const random = Array.from(crypto.getRandomValues(new Uint8Array(20)), b => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('');
+    const response = await fetchImpl(`https://${random}.test.nextdns.io/`, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+    const info = await response.json();
+    const how = [PROTOCOLS[info.protocol] ?? info.protocol, info.deviceName].filter(Boolean).join(', ');
+    return { usesNextdns: info.status === 'ok', how };
+  } catch {
+    return null;
+  }
+}

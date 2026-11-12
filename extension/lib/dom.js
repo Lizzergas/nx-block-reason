@@ -39,6 +39,9 @@ export const CHROME_ERRORS = {
   'net::ERR_ADDRESS_INVALID': 'Address not usable',
   'net::ERR_ADDRESS_UNREACHABLE': 'Address unreachable',
   'net::ERR_CONNECTION_REFUSED': 'Connection refused',
+  'net::ERR_CONNECTION_RESET': 'Connection reset',
+  'net::ERR_CONNECTION_FAILED': 'Connection failed',
+  'net::ERR_QUIC_PROTOCOL_ERROR': 'HTTP/3 (QUIC) failed',
 };
 
 // A "?" button that explains a term on hover or keyboard focus. The text lives in a role=tooltip element.

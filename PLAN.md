@@ -59,12 +59,12 @@ Built with tasteskill (`design-taste-frontend`, app-screen rules). Dealt style: 
 - Storage: profile ID and options in `chrome.storage.sync`; API key in `chrome.storage.local` (this browser only).
 - Tests: `node --test` for EDE parsing, reason mapping and classification, against recorded resolver answers.
 
-## Status (2026-11-11)
+## Status (2026-11-12)
 
-Version 0.0.3 is built in `extension/`; see README.md for install and development.
+Version 0.0.5 is built in `extension/`; see README.md for install and development.
 
-- `npm test`: 20 unit tests pass against recorded answers.
-- `npm run e2e`: 13 live checks pass in Chrome 157.
+- `npm test`: 22 unit tests pass against recorded answers.
+- `npm run e2e`: 15 live checks pass in Chrome 157.
 - Decisions: Cloudflare is the comparison resolver, asked only on request or with the switch on. "Allow for 10 minutes" stores its deadline in `chrome.storage.local` as well as an alarm (`lib/timed.js`), so updates and restarts cannot turn it into a permanent allow. After allowing, the page waits for NextDNS to answer, then reloads.
 - Not yet verified live: the API calls (allow, undo, timed allow, the logs search), because no API key was available. They follow the NextDNS API docs. Granting the optional access from the switch is also untested by e2e, because headless Chrome cannot accept the prompt.
 - Setting names for `free-hosting` and `tunneling` are best guesses and need checking against the NextDNS dashboard.

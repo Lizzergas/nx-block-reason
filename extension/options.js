@@ -1,4 +1,4 @@
-import { check } from './lib/dns.js';
+import { check, browserStatus } from './lib/dns.js';
 import { describe } from './lib/reasons.js';
 import { listProfiles } from './lib/api.js';
 import { getSettings, saveSettings, isProfileId, canCount, COUNT_ACCESS } from './lib/settings.js';
@@ -6,7 +6,6 @@ import { mark, h, tip } from './lib/dom.js';
 
 const $ = id => document.getElementById(id);
 const TEST_DOMAIN = 'doubleclick.net'; // on nearly every ad blocklist, so it shows a block reason
-const PROTOCOLS = { DOH: 'DoH', DOT: 'DoT', DOQ: 'DoQ', UDP: 'plain DNS' };
 const SWITCHES = [
   ['replacePage', 'Replace Chrome’s error page', 'Only when NextDNS confirms the block. Sites that are simply down keep Chrome’s page.'],
   ['labelLookups', 'Label checks in NextDNS logs', 'Checks appear as the device “nx-block-reason”, apart from your normal browsing.'],
@@ -90,19 +89,11 @@ async function testKey() {
   }
 }
 
-// Shows whether this browser's DNS really goes through NextDNS. test.nextdns.io serves browsers a page that
-// queries a random subdomain, so ask a random subdomain for the JSON directly.
-async function browserStatus() {
-  try {
-    const random = Array.from(crypto.getRandomValues(new Uint8Array(20)), b => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('');
-    const response = await fetch(`https://${random}.test.nextdns.io/`, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
-    const info = await response.json();
-    $('browser-status').hidden = false;
-    const how = [PROTOCOLS[info.protocol] ?? info.protocol, info.deviceName].filter(Boolean).join(', ');
-    $('browser-text').textContent = info.status === 'ok' ? `This browser uses NextDNS (${how})` : 'This browser is not using NextDNS';
-  } catch {
-    $('browser-status').hidden = true;
-  }
+// Shows whether this browser's DNS really goes through NextDNS.
+async function showBrowserStatus() {
+  const status = await browserStatus();
+  $('browser-status').hidden = !status;
+  if (status) $('browser-text').textContent = status.usesNextdns ? `This browser uses NextDNS (${status.how})` : 'This browser is not using NextDNS';
 }
 
 async function main() {
@@ -133,7 +124,7 @@ async function main() {
   $('apiKey').addEventListener('change', testKey);
   if (settings.profileId) testProfile();
   if (settings.apiKey) testKey();
-  browserStatus();
+  showBrowserStatus();
 }
 
 main();

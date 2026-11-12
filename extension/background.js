@@ -1,5 +1,5 @@
 // Watches for DNS failures, asks NextDNS why, shows the blocked page for main frames and, when allowed, counts the rest per tab.
-import { check, normalizeHost } from './lib/dns.js';
+import { check, normalizeHost, NO_ADDRESS_ERRORS } from './lib/dns.js';
 import { getSettings, resultKey, tabKey, blockedKey, failedKey, canCount, COUNT_ACCESS } from './lib/settings.js';
 import { lastBlocked } from './lib/api.js';
 import { sweepUnallow } from './lib/timed.js';
@@ -7,15 +7,16 @@ import { isCheckable } from './lib/domains.js';
 
 const BLOCKED_PAGE = chrome.runtime.getURL('blocked.html');
 // Chrome reports a DNS block as an unresolved name (empty answer) or, for 0.0.0.0 answers, an unusable address.
+// Connecting to 0.0.0.0 reaches this device itself, so it can also fail as refused, reset or, when Chrome remembers
+// the site speaks HTTP/3, as a QUIC error.
 const DNS_ERRORS = new Set([
   'net::ERR_NAME_NOT_RESOLVED', 'net::ERR_NAME_RESOLUTION_FAILED', 'net::ERR_ADDRESS_INVALID',
-  'net::ERR_ADDRESS_UNREACHABLE', 'net::ERR_CONNECTION_REFUSED',
+  'net::ERR_ADDRESS_UNREACHABLE', 'net::ERR_CONNECTION_REFUSED', 'net::ERR_CONNECTION_RESET',
+  'net::ERR_CONNECTION_FAILED', 'net::ERR_QUIC_PROTOCOL_ERROR',
 ]);
-// Failures an old blocked answer can cause: no address, or 0.0.0.0 (refused at once, or rejected as unusable).
+// Failures an old blocked answer can cause: no address, or 0.0.0.0 (refused, reset or rejected as unusable).
 // ERR_ADDRESS_UNREACHABLE is left out: it is a routing problem, so it is not blamed on a cached answer.
-const STALE_ERRORS = new Set([
-  'net::ERR_NAME_NOT_RESOLVED', 'net::ERR_NAME_RESOLUTION_FAILED', 'net::ERR_ADDRESS_INVALID', 'net::ERR_CONNECTION_REFUSED',
-]);
+const STALE_ERRORS = new Set([...DNS_ERRORS].filter(error => error !== 'net::ERR_ADDRESS_UNREACHABLE'));
 const CACHE_MS = 60_000;
 const inflight = new Map(); // host → { at, promise }
 // A page could make thousands of failing requests; each would cost a NextDNS query. Cap what one page can trigger.
@@ -97,21 +98,23 @@ chrome.webNavigation.onErrorOccurred.addListener(async details => {
 
   const result = await checkHost(host, settings);
   // NextDNS answers normally now, yet Chrome failed: usually the device or Chrome still has an earlier blocked
-  // answer cached (for example right after allowing the domain). Explain it when there is evidence of that block.
+  // answer cached (for example right after allowing the domain). Explain it when there is evidence of that block,
+  // or when Chrome got no address at all although NextDNS has one: that mismatch is evidence enough.
   const resolves = !result.verdict.blocked && result.nextdns?.answers.length > 0 && STALE_ERRORS.has(details.error);
   if (!result.verdict.blocked && !resolves) return;
   const stale = resolves ? await recentBlock(host, settings) : null;
   // The person may have moved on while NextDNS was asked; only replace the error page that is still showing.
   if ((await topUrl(details.tabId)) !== details.url) return;
-  if (resolves && !stale) {
-    // No sign of a block: keep Chrome's page (the site may simply be down), but let the popup explain.
+  if (resolves && !stale && !NO_ADDRESS_ERRORS.has(details.error)) {
+    // A failed connection with no sign of a block: keep Chrome's page (the site may simply be down), but let the
+    // popup explain.
     await chrome.storage.session.set({ [failedKey(details.tabId)]: { host, url: details.url, error: details.error, at: Date.now() } });
     chrome.action.setBadgeBackgroundColor({ tabId: details.tabId, color: '#141414' }).catch(() => {});
     chrome.action.setBadgeText({ tabId: details.tabId, text: '!' }).catch(() => {});
     return;
   }
   await chrome.storage.session.set({
-    [resultKey(host)]: { ...result, chromeError: details.error, stale },
+    [resultKey(host)]: { ...result, chromeError: details.error, stale: resolves ? (stale ?? { source: 'unknown' }) : null },
     [`shown:${details.tabId}`]: { url: details.url },
   });
   const target = `${BLOCKED_PAGE}?u=${encodeURIComponent(details.url)}`;

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
-import { parseDoh, parseEde, summarize, classify, isPrivateAddress, check, nextdnsUrl, normalizeHost } from '../extension/lib/dns.js';
+import { parseDoh, parseEde, summarize, classify, isPrivateAddress, check, nextdnsUrl, normalizeHost, browserStatus, NO_ADDRESS_ERRORS } from '../extension/lib/dns.js';
 
 // Real answers recorded from a real NextDNS profile and from Cloudflare on 2026-11-11 (test/fixtures).
 const fixture = (resolver, name) => summarize(parseDoh(readFileSync(new URL(`fixtures/${resolver}--${name}.json`, import.meta.url), 'utf8')), 10);
@@ -87,4 +87,22 @@ test('check asks only NextDNS when the public comparison is off', async () => {
   assert.ok(seen[0].startsWith('https://dns.nextdns.io/'));
   assert.equal(result.public, null);
   assert.deepEqual(result.verdict.codes, ['nad']);
+});
+
+test('the connection check reports whether this browser uses NextDNS', async () => {
+  const reply = body => async url => {
+    assert.match(url, /^https:\/\/[a-z0-9]{20}\.test\.nextdns\.io\/$/);
+    return { json: async () => body };
+  };
+  assert.deepEqual(await browserStatus({ fetchImpl: reply({ status: 'ok', protocol: 'DOH', deviceName: 'laptop' }) }),
+    { usesNextdns: true, how: 'DoH, laptop' });
+  assert.deepEqual(await browserStatus({ fetchImpl: reply({ status: 'unconfigured', protocol: 'UDP' }) }),
+    { usesNextdns: false, how: 'plain DNS' });
+  assert.equal(await browserStatus({ fetchImpl: async () => { throw new Error('offline'); } }), null);
+});
+
+test('only a missing or unusable address counts as no address', () => {
+  assert.ok(NO_ADDRESS_ERRORS.has('net::ERR_NAME_NOT_RESOLVED'));
+  assert.ok(NO_ADDRESS_ERRORS.has('net::ERR_ADDRESS_INVALID'));
+  assert.ok(!NO_ADDRESS_ERRORS.has('net::ERR_CONNECTION_REFUSED'));
 });

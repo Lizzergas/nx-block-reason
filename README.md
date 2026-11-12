@@ -16,7 +16,7 @@ The extension is loaded from this folder and never updates itself. After changin
 ## How it works
 
 - `background.js` watches main-frame failures that look like DNS blocks (`ERR_NAME_NOT_RESOLVED`, `ERR_ADDRESS_INVALID`, and similar), then checks the host with `lib/dns.js`. Results are cached for a minute. Subresource failures are watched only while counting is on (optional `webRequest` and all-site access), at most 100 hosts per page and 6 lookups at a time.
-- When NextDNS answers normally but Chrome failed, the extension looks for evidence of an earlier block: blocks it saw this session, or (with an API key) the profile's logs for the last 24 hours. With evidence it explains the cached answer; without, Chrome's page stays and the icon shows "!".
+- When NextDNS answers normally but Chrome failed, the extension looks for evidence of an earlier block: blocks it saw this session, or (with an API key) the profile's logs for the last 24 hours. With evidence it explains the cached answer. Without evidence it still explains it when Chrome got no address at all (`ERR_NAME_NOT_RESOLVED`, `ERR_ADDRESS_INVALID`), because NextDNS having an address is evidence enough; for failed connections Chrome's page stays and the icon shows "!". The page also asks `test.nextdns.io` whether this browser uses NextDNS.
 - `lib/dns.js` asks `dns.nextdns.io/<profile>/nx-block-reason` and `cloudflare-dns.com` for the A record. It reads the EDE text (`Blocked by NextDNS: nad, blocklist:hagezi-multi-pro`). It infers DNS rebinding protection when NextDNS returns nothing but public DNS returns a private address, so rebinding blocks are recognised only with "Compare with public DNS" on (off by default).
 - Only confirmed blocks replace Chrome's page. A site that is down or does not exist keeps Chrome's own error.
 - Local addresses are never looked up: IP addresses, `localhost`, single-label names and local suffixes (`.local`, `.lan`, `.home.arpa`, `.internal`) are skipped (`lib/domains.js`).
@@ -41,7 +41,7 @@ npm run e2e    # real Chrome + this machine's NextDNS: loads the extension and v
 - the permissions granted at install (NextDNS hosts only) and the popup with counting off;
 - blocked request counts and the badge, on a copy of the extension with the optional access granted (headless Chrome cannot accept Chrome's confirmation);
 - "Ask public DNS" on the blocked page;
-- a cached blocked answer (Chrome is pointed at `0.0.0.0` for `example.org` while NextDNS answers normally), with and without evidence of an earlier block, including the popup's "Explain and fix" and Reload;
+- a cached blocked answer (Chrome is pointed at `0.0.0.0` for `example.org` while NextDNS answers normally), with and without evidence of an earlier block, including the popup's "Explain and fix" and Reload, and a name Chrome cannot resolve at all (`example.com` mapped to `~NOTFOUND`);
 - updating from 0.0.2, which must give back the all-site access and drop the old badge switch;
 - the popup;
 - the settings connection check.

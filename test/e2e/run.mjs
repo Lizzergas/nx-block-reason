@@ -15,6 +15,9 @@ if (!/^[a-z0-9]{6}$/i.test(profileId ?? '')) {
   console.error('Set the NextDNS profile this machine uses: NEXTDNS_PROFILE=abc123 npm run e2e (or -- --profile abc123).');
   process.exit(2);
 }
+// A real domain that the profile blocks only as "nad" (rarely seen) and that resolves on public DNS. Change it with
+// NAD_DOMAIN when it gets allowlisted or becomes popular. amovegames.com was used until it was allowlisted.
+const nadDomain = process.env.NAD_DOMAIN ?? 'qzxv.com';
 const chromePath = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 mkdirSync(out, { recursive: true });
@@ -24,7 +27,9 @@ const userData = mkdtempSync(join(tmpdir(), 'nx-block-reason-e2e-'));
 const chrome = spawn(chromePath, [
   '--headless=new', '--remote-debugging-pipe', '--enable-unsafe-extension-debugging', `--user-data-dir=${userData}`,
   // example.org stands in for a domain this device still has a blocked answer for, while NextDNS answers normally.
-  '--host-resolver-rules=MAP example.org 0.0.0.0',
+  // example.net does the same over HTTP/3, as when Chrome remembers a site speaks QUIC: that fails as a QUIC error.
+  // example.com stands in for a device that still has an empty blocked answer (NextDNS's "nad" blocks): no address.
+  '--host-resolver-rules=MAP example.org 0.0.0.0, MAP example.net 0.0.0.0, MAP example.com ~NOTFOUND', '--origin-to-force-quic-on=example.net:443',
   '--no-first-run', '--no-default-browser-check', '--window-size=1440,900',
 ], { stdio: ['ignore', 'ignore', 'ignore', 'pipe', 'pipe'] });
 const toChrome = chrome.stdio[3];
@@ -144,8 +149,8 @@ try {
   }
 
   await step('newly active domain explains nad and offers the allowlist without a key', async () => {
-    const { tab, text } = await blockedPage('amovegames.com');
-    assert.equal(text.h1, 'amovegames.com');
+    const { tab, text } = await blockedPage(nadDomain);
+    assert.equal(text.h1, nadDomain);
     assert.deepEqual(text.codes, ['nad']);
     assert.deepEqual(text.kinds, ['Precaution']);
     assert.deepEqual(text.more, ['Add an API key to allow from here', 'NextDNS logs', 'Settings']);
@@ -245,13 +250,42 @@ try {
     assert.match(text.lanes[0], /^Earlier: Blocked 5 min ago by /);
     assert.match(text.lanes[1], /^NextDNS now: \d+\.\d+\.\d+\.\d+/);
     assert.match(text.lanes[2], /^Chrome got: /);
-    assert.equal(text.steps, 3);
+    assert.equal(text.steps, 5);
     await shot(tab.sessionId, 'stale.png');
     // Reload must explain again, not be treated as Back.
     await evaluate(tab.sessionId, `document.querySelector('.actions .btn-primary').click()`);
     await sleep(2500);
     await waitFor(async () => (await targetUrl(tab.targetId))?.startsWith(`${base}/blocked.html`), 'the explanation after Reload');
     await waitFor(() => evaluate(tab.sessionId, `document.querySelector('.finding')?.textContent.startsWith('NextDNS allows it now')`), 'the stale page after Reload');
+  });
+
+  await step('no address although NextDNS has one is explained without evidence of a block', async () => {
+    const tab = await open('https://example.com/');
+    await waitFor(async () => (await targetUrl(tab.targetId))?.startsWith(`${base}/blocked.html`), 'the explanation page');
+    const text = await waitFor(() => evaluate(tab.sessionId, `document.querySelector('.finding') &&
+      !document.querySelectorAll('.compare.stale .lane .ans')[3]?.textContent.startsWith('Checking') && ({
+      finding: document.querySelector('.finding').textContent,
+      lanes: [...document.querySelectorAll('.compare.stale .lane')].map(l => l.querySelector('.who').textContent + ': ' + l.querySelector('.ans').textContent),
+      steps: [...document.querySelectorAll('.fix li')].map(li => li.textContent) })`), 'the stale page');
+    assert.equal(text.finding, 'NextDNS has an address for it, but this device got none. Usually that’s an old blocked answer still cached here.');
+    assert.equal(text.lanes[2], 'Chrome got: Name not resolved (ERR_NAME_NOT_RESOLVED)');
+    // This machine's DNS goes through NextDNS (the e2e prerequisite), so the connection check must say so.
+    assert.match(text.lanes[3], /^This browser: Uses NextDNS \(/);
+    assert.match(text.steps[1], /sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder/);
+    assert.match(text.steps[2], /within 5 minutes/);
+    assert.match(text.steps[4], /airplane mode/);
+    await shot(tab.sessionId, 'stale-no-address.png');
+  });
+
+  await step('a cached blocked answer over HTTP/3 is explained too', async () => {
+    await evaluate(settings.sessionId, `chrome.storage.session.set({ 'was:example.net': { at: Date.now() - 5 * 60_000, codes: ['blocklist:hagezi-pro'] } })`);
+    const tab = await open('https://example.net/');
+    await waitFor(async () => (await targetUrl(tab.targetId))?.startsWith(`${base}/blocked.html`), 'the explanation page');
+    const text = await waitFor(() => evaluate(tab.sessionId, `document.querySelector('.finding') && ({
+      chrome: document.querySelectorAll('.compare.stale .lane .ans')[2].textContent,
+      first: document.querySelector('.fix li').textContent })`), 'the stale page');
+    assert.equal(text.chrome, 'HTTP/3 (QUIC) failed (ERR_QUIC_PROTOCOL_ERROR)');
+    assert.match(text.first, /Flush socket pools/);
   });
 
   await step('only NextDNS hosts are granted until counting is turned on', async () => {

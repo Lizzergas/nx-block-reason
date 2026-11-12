@@ -1,4 +1,4 @@
-import { check, query, normalizeHost, nextdnsUrl, PUBLIC_RESOLVER } from './lib/dns.js';
+import { check, query, normalizeHost, nextdnsUrl, browserStatus, PUBLIC_RESOLVER, NO_ADDRESS_ERRORS, BLOCKED_ANSWER_MINUTES } from './lib/dns.js';
 import { describe, severity, finding, KIND_LABELS } from './lib/reasons.js';
 import { addToList, removeFromList, dashboard } from './lib/api.js';
 import { getSettings, resultKey } from './lib/settings.js';
@@ -228,7 +228,7 @@ const ago = ms => {
 // The command that clears the operating system's DNS cache, for the platform this browser runs on.
 function flushCommand() {
   const platform = (navigator.userAgentData?.platform || navigator.platform || '').toLowerCase();
-  if (platform.startsWith('mac')) return { os: 'macOS', command: 'sudo killall -HUP mDNSResponder' };
+  if (platform.startsWith('mac')) return { os: 'macOS', command: 'sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder' };
   if (platform.startsWith('win')) return { os: 'Windows', command: 'ipconfig /flushdns' };
   if (platform.includes('linux')) return { os: 'Linux', command: 'resolvectl flush-caches' };
   return null;
@@ -237,8 +237,12 @@ function flushCommand() {
 // NextDNS answers normally now, but Chrome failed: the device or Chrome kept an earlier blocked answer.
 function renderStale(r) {
   const known = r.stale.source === 'browser' || r.stale.source === 'logs';
-  // A refused connection can also be a server that is down, so that case is worded as likely, not certain.
-  const refused = r.chromeError === 'net::ERR_CONNECTION_REFUSED';
+  // Only a missing or unusable address points straight at a cached answer. A failed connection can also be a server
+  // that is down, so that case is worded as likely, not certain.
+  const uncertain = !NO_ADDRESS_ERRORS.has(r.chromeError);
+  const findingText = known ? `NextDNS allows it now, but this device ${uncertain ? 'probably ' : ''}still has the old blocked answer.`
+    : uncertain ? 'NextDNS isn’t blocking it now. This device may still have an old blocked answer.'
+      : 'NextDNS has an address for it, but this device got none. Usually that’s an old blocked answer still cached here.';
   document.title = `${r.host} is not blocked anymore`;
   const blockedBy = r.stale.source === 'logs'
     ? r.stale.reasons.map(reason => reason.name).join(', ')
@@ -257,24 +261,37 @@ function renderStale(r) {
     setTimeout(() => { b.textContent = 'Copy'; }, 1500);
   } }, 'Copy');
   const steps = h('ol', { class: 'fix' },
-    h('li', {}, h('div', { class: 'row' }, h('span', {}, 'Clear Chrome’s DNS cache: open ', h('code', {}, 'chrome://net-internals/#dns'), ' and click Clear host cache.'),
+    h('li', {}, h('div', { class: 'row' }, h('span', {}, 'Clear Chrome’s DNS cache: open ', h('code', {}, 'chrome://net-internals/#dns'), ' and click Clear host cache.',
+      // HTTP/3 connections outlive the host cache, so they need closing too.
+      r.chromeError === 'net::ERR_QUIC_PROTOCOL_ERROR' ? ' Then, under Sockets, click Flush socket pools.' : ''),
       h('button', { class: 'btn btn-secondary btn-small', onclick: () => chrome.tabs.create({ url: 'chrome://net-internals/#dns' }) }, 'Open'))),
     flush ? h('li', {}, h('div', { class: 'row' }, h('span', {}, `Clear the ${flush.os} DNS cache: `, h('code', {}, flush.command)), copy)) : null,
-    h('li', {}, 'Reload. If it still fails, the site may be down, or this device may use a different NextDNS profile or DNS server.'));
+    h('li', {}, `Or wait. Blocked answers expire by themselves, usually within ${BLOCKED_ANSWER_MINUTES} minutes.`),
+    h('li', {}, 'Reload. If it still fails, the site may be down, or this device may use a different NextDNS profile or DNS server.'),
+    h('li', {}, 'Same on your phone or another computer? Each device keeps its own copy. On a phone, turn airplane mode on and off.'));
 
-  show(titleRow(r.host, h('span', { class: 'pill pill-positive' }, 'Not blocked now'),
-      known ? `NextDNS allows it now, but this device ${refused ? 'probably ' : ''}still has the old blocked answer.`
-        : 'NextDNS isn’t blocking it now. This device may still have an old blocked answer.',
+  const browserLane = lane('This browser', 'Checking…');
+  show(titleRow(r.host, h('span', { class: 'pill pill-positive' }, 'Not blocked now'), findingText,
       [h('button', { class: 'btn btn-primary', onclick: reloadPage }, 'Reload')]),
     strip(r),
     h('section', { class: 'card why', 'aria-labelledby': 'what-h' },
       h('div', { class: 'card-h' }, h('h2', { id: 'what-h' }, 'What happened')),
       h('div', { class: 'compare stale' }, earlier,
         lane('NextDNS now', (r.nextdns?.answers ?? []).map(a => a.data).slice(0, 3).join(', ') || 'No address'),
-        lane('Chrome got', chromeGot)),
+        lane('Chrome got', chromeGot), browserLane),
       h('div', { class: 'card-h' }, h('h2', {}, 'Clear the old answer')), steps,
       h('div', { class: 'more' }, external(dashboard.logs(settings.profileId), 'NextDNS logs'),
         h('button', { class: 'btn btn-text', onclick: () => chrome.runtime.openOptionsPage() }, 'Settings'))));
+
+  // If this browser doesn't go through NextDNS at all, the failure came from another DNS server, not the profile.
+  browserStatus().then(status => {
+    browserLane.querySelector('.ans').textContent = !status ? 'Couldn’t check'
+      : status.usesNextdns ? `Uses NextDNS (${status.how})` : 'Not using NextDNS';
+    if (status && !status.usesNextdns) {
+      browserLane.classList.add('blocked');
+      app.querySelector('.finding').textContent = 'This browser isn’t using NextDNS right now, so this failure comes from another DNS server, not your NextDNS profile. Check that whatever sends your DNS to NextDNS (Tailscale, the NextDNS app or your router) is on.';
+    }
+  });
 }
 
 function renderMessage(title, text, actions = []) {
